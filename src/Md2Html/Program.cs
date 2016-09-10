@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace Md2Html
@@ -57,13 +58,62 @@ namespace Md2Html
             var newPath = file.Remove(idx, file.Length - idx) + ".htm";
             Convert(file, newPath);
         }
+        const string prepend_html = @"
+<!DOCTYPE html>
+<html><head>
+<style>
+body {
+    width:800px;
+    margin:auto;
+    padding:10px;
+    font-sie:14pt;  
+    line-height:140%;
+    font-family:sans-serif;
+}
+pre {
+    padding:8px;
+    line-height:140%;
+    background-color:#ddd;
+}
+code {
+    padding:2px;
+    background-color:#ddd;
+}
+</style>
+</head><body>
+";
+        const string prepend_md = @"
+![logo](http://foo/logo.png 'Name')
+---
+";
+        const string append_html = @"
+</body></html>
+";
+        const string append_md = @"
+---
+Copyright © 2016 [Company Name](https://www.url.com). All rights reserved.
+";
 
         static void Convert(string path, string newPath)
         {
-            using (var reader = new StreamReader(File.OpenRead(path)))
-            using (var writer = new StreamWriter(File.OpenWrite(newPath)))
+            if (File.Exists(newPath))
             {
-                CommonMark.CommonMarkConverter.Convert(reader, writer);
+                File.Delete(newPath);
+            }
+
+            var html = "";
+
+            using (var reader = new StreamReader(File.OpenRead(path)))
+            {
+                var md = prepend_md + reader.ReadToEnd() + append_md;
+                html = prepend_html + CommonMark.CommonMarkConverter.Convert(md) + append_html;
+            }
+
+            using (var newFile = File.OpenWrite(newPath))
+            using (var writer = new StreamWriter(newFile, Encoding.UTF8))
+            {
+                writer.Write(html);
+                writer.Flush();
             }
         }
     }
